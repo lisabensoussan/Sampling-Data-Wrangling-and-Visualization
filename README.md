@@ -31,7 +31,7 @@ In this section, data is scraped from the Wikipedia page on notable female scien
 3. **Text Parsing**: Writing a function to parse the biographies of scientists, excluding references, and measuring the length of the biographies.
 4. **Biographical Data Analysis**: Finding the shortest and longest biographies for each field of study and displaying them in separate tables.
 5. **Word Frequency Analysis**: Retrieving the words from the biographies and displaying a word cloud of the most common words, excluding stopwords and special characters.
-6. **Length Distribution Analysis**: Displaying the distribution of biography lengths and word lengths for each field in separate bar pl
+6. **Length Distribution Analysis**: Displaying the distribution of biography lengths and word lengths for each field in separate bar plots.
 
 
 ### Required Libraries
