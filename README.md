@@ -70,5 +70,5 @@ options("scipen" = 100, "digits" = 4)  # avoid scientific display of digits
 
 ## Authors
 
-- **Lisa Mechaly** – https://www.linkedin.com/in/lisa-mechaly-932409261?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app
+- **Lisa Mechaly Bensoussan** – https://www.linkedin.com/in/lisa-mechaly-932409261?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app
 - **Jeremy Hakoun** – https://www.linkedin.com/in/jeremyhakoune?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app
