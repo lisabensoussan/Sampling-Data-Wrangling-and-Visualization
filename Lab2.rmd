@@ -1,0 +1,717 @@
+---
+title: "52414: Lab 2 Solutions"
+author: "Lisa Bensoussan and Jeremy Hakoun"
+date: "June 17, 2023"
+output: html_document
+---
+
+## *Lab 2: Sampling, Data Wrangling and Visualization*  
+<br/><br/>  
+  
+
+###  Instructions  
+  
+This lab will be submitted in pairs. (if you don't have a pair, please contact us).  
+
+**Grading:** There are overall $13$ sub-questions in two questions, plus a *bonus* sub-question. Each sub-question is worth $10$ points for the lab's grade.
+Select $10$ sub-questions and indicate which ones did you answer (with a possible addition of the *bonus* sub-question). If your solution contains more than $10$ sub-questions, we will check and grade only the first $10$.  
+
+Some questions may require data wrangling and manipulation which you need to decide on. <br>
+In some graphs you may need to change the graph limits. If you do so, please include the outlier 
+points you have removed in a separate table.
+
+Show numbers in plots/tables using standard digits and not scientific display. That is: 90000000 and not 9e+06. <br>
+Round numbers to at most 3 digits after the dot - that is, 9.456 and not 9.45581451044
+
+The required libraries are listed below the instructions. You are allowed to add additional libraries if you want. 
+If you do so, *please explain what libraries you've added, and what is each new library used for*. 
+
+**We did not do the questions Q1.4, Q2.8, and Q2.9**
+
+Required Libraries:
+```{r echo=TRUE, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(ggplot2)
+library(dplyr)
+library(scales)   # needed for formatting y-axis labels to non-scientific type
+library(tidyr)
+library(tidyverse)
+library(reshape2) # melt
+library(ggthemes)
+library(modelr)
+############################################
+library(grid) # geom_segment
+library(ggrepel)# Use ggrepel::geom_label_repel
+library(rvest)
+library(wordcloud2)
+library(tidytext)
+options("scipen"=100, "digits"=4)  # avoid scientific display of digits. Take 4 digits. 
+```
+
+<br/><br/>
+
+## Q1. Rollups        
+![Rollups](https://ashdodonline.co.il/wp-content/uploads/2023/05/2.jpg)
+
+You are a `rollups` manufacturer and seller.  You start with one `rollup` machine and zero shekels. <br>
+You have one month, i.e. $30$ days to sell and your goal is to maximize your profit. <br>
+For each `rollup` that you sell, you earn one shekel. <br>
+Your machines are probabilistic and each machine generates a `Poisson(1)` number of rollups each day.
+
+Formally, at the end of day $i$, you have $m_i$ `rollups` machines, and $s_i$ shekels, where you start with $r_0=1$ and $s_0=0$. <br>
+In the evening you manufacture $r_i \sim Poiss(m_i)$ `rollups` and sell them in the next day. 
+Suppose that you can sell *all* `rollups` you have during each day. <br>
+At the evening of the day, you can decide if you want to buy
+more `rollups` machines in order to increase the number of `rollups` you can make and sell tomorrow and in the next days. <br>
+Each `rollup` machine costs one shekel, and you cannot be in dept to your dealer. 
+That is, you can decide to pay at each day any integer amount $a$ of machines not exceeding your current profit, i.e. any $a=0,1,2,..,s_i$. <br>
+A the end of day $30$, all the kids in the neighborhood the `pistachio crunch ice cream` trend starts and the market for `rollups` collapses, hence all your `rollups` becomes worthless.  
+Your final profit is $s_{30}$ , the random variable describing the number of shekels you are left with after $30$ days.
+
+1. Suppose that you invest all your money in buying `rollups` machines in days $1-29$, and only keep a profit at the end of day $30$. 
+Write a simulation program to give the distribution of $s_{30}$ for this strategy. <br>
+Simulate at least `10,000` months of `rollups` sales (i.e. at least `10,000` random values of $s_{30}$). 
+Plot the resulting empirical distribution and report the `mean`, `median` and $25$ and $75$ percentiles. Choose a plot that you consider best suitable for displaying the distribution. <br>
+Does the resulting distribution resemble the Normal distribution? if not, choose a transformation that will make it look more similar to the Normal distribution and show the transformed distribution, together with a machine Normal distribution with the same `mean` and `variance`.   
+
+2. Suppose that you never invest any money in buying new machines, but just collect the profits from the one machine that you start with. Repeat 1. for this strategy. 
+
+3. Suppose that at the end of day $i$, you decide to buy a random number of machines, with the uniform distribution $U[0, s_i]$. 
+Repeat 1. for this strategy. 
+
+4. Suppose that you invest all your money up to day $i$, and then stop investing at all. Repeat the above for $i=1,..,29$ and plot
+the `expected` profit as a function of $i$. What $i$ is best for this strategy in terms of the expected profit? 
+
+5. (Bonus *) What is the optimal strategy? that the strategy that will maximize the expected profit $E[s_{30}]$? <br>
+Describe the strategy, prove that it is optimal, and compute the expected profit under this optimal strategy. 
+
+
+
+
+
+**Solutions here: Erase some to keep only $10$ sub-questions overall! ** <br>
+Q1.1. 
+```{r, cache=TRUE} 
+# Set the number of simulations
+num_simulations <- 10000
+
+# Set the value of s30 (profit at the end of day 30)
+s30 <- 0
+
+# Function to simulate profit
+simulate_profit <- function() {
+  m <- 1
+  s <- 0
+  
+  for (i in 1:30) {
+    r <- rpois(1, m)
+    s <- s + r
+    a <- min(s, s30)
+    s <- s - a
+    m <- m + a
+  }
+  
+  return(s)
+}
+
+# Simulate the profits
+profits <- replicate(num_simulations, simulate_profit())
+
+# Calculate statistics
+mean_profit <- mean(profits)
+median_profit <- median(profits)
+percentile25 <- quantile(profits, 0.25)
+percentile75 <- quantile(profits, 0.75)
+
+# Print the statistics
+cat("Mean Profit:", mean_profit, "\n")
+cat("Median Profit:", median_profit, "\n")
+cat("25th Percentile:", percentile25, "\n")
+cat("75th Percentile:", percentile75, "\n")
+
+# Plot the empirical distribution
+hist(profits, breaks = "FD", freq = FALSE, xlab = "Profit (s30)",
+     main = "Distribution of s30", col = "skyblue", border = "white")
+
+# Fit and plot a normal distribution with the same mean and variance
+mu <- mean(profits)
+sigma <- sd(profits)
+curve(dnorm(x, mean = mu, sd = sigma), add = TRUE, col = "red", lwd = 2)
+
+
+```
+
+We took 10,000 random days of roll-ups sales and simulated buying machines between 1-29 first days and taking the profit on the 30th day.
+We can clearly see that its a normal distribution with the following data: 
+
+Mean: The mean profit is approximately 29.95. This suggests that, on average, the strategy of investing in rollup machines yields a profit close to 29.95 at the end of day 30.
+Median: The median profit is 30. This indicates that 50% of the simulated profits are equal to or below 30, while the other 50% are equal to or above 30. Since the median is equal to the mean, it suggests that the distribution is symmetric.
+25th Percentile: The 25th percentile is 26. This means that 25% of the simulated profits are below 26, indicating the lower range of the profit distribution.
+75th Percentile: The 75th percentile is 34. This means that 75% of the simulated profits are below 34, indicating the upper range of the profit distribution.
+
+Q1.2. 
+```{r, cache=TRUE} 
+# Set the number of simulations
+num_simulations <- 10000
+
+# Set the value of s30 (profit at the end of day 30)
+s30 <- 0
+
+# Function to simulate profit without buying new machines
+simulate_profit2 <- function() {
+  m <- 1
+  s <- 0
+  
+  for (i in 1:30) {
+    r <- rpois(1, m)
+    s <- s + r
+  }
+  
+  return(s)
+}
+
+# Simulate the profits without buying new machines
+profits2 <- replicate(num_simulations, simulate_profit2())
+
+# Calculate statistics
+mean_profit2 <- mean(profits2)
+median_profit2 <- median(profits2)
+percentile25.2 <- quantile(profits2, 0.25)
+percentile75.2 <- quantile(profits2, 0.75)
+
+# Print the statistics
+cat("Mean Profit:", mean_profit2, "\n")
+cat("Median Profit:", median_profit2, "\n")
+cat("25th Percentile:", percentile25.2, "\n")
+cat("75th Percentile:", percentile75.2, "\n")
+
+# Plot the empirical distribution without buying new machines
+hist(profits2, breaks = "FD", freq = FALSE, xlab = "Profit (s30)",
+     main = "Distribution of s30 (No new machines)", col = "skyblue", border = "white")
+
+```
+
+The distribution appears to be symmetric and centered around 30, suggesting a relatively stable profit outcome.
+Mean : The mean profit is approximately 30.06. This suggests that, on average, the strategy of not buying new machines yields a profit close to 30.06 at the end of day 30.
+Median : The median profit is 30. This indicates that 50% of the simulated profits are equal to or below 30, while the other 50% are equal to or above 30. Similar to the previous strategy, the median is equal to the mean, suggesting a symmetric distribution.
+25th Percentile: The 25th percentile is 26. This means that 25% of the simulated profits are below 26, indicating the lower range of the profit distribution.
+75th Percentile: The 75th percentile is 34. This means that 75% of the simulated profits are below 34, indicating the upper range of the profit distribution.
+
+Comparing these statistics to the previous strategy, the results are very similar. The mean, median, and percentiles of the profit distribution without buying new machines are close to those when buying rollups machines.
+
+Q1.3. 
+```{r, cache=TRUE} 
+# Set the number of simulations
+num_simulations <- 10000
+
+# Set the value of s30 (profit at the end of day 30)
+s30 <- 0
+
+# Function to simulate profit
+simulate_profit <- function() {
+  m <- 1
+  s <- 0
+  
+  for (i in 1:30) {
+    r <- rpois(1, m)
+    s <- s + r
+    a <- min(s, s30)
+    s <- s - a
+    m <- m + sample(0:s, 1)  # Randomly choose the number of machines to buy
+  }
+  
+  return(s)
+}
+
+# Simulate the profits
+profits <- replicate(num_simulations, simulate_profit())
+
+# Calculate statistics
+mean_profit <- mean(profits)
+median_profit <- median(profits)
+percentile25 <- quantile(profits, 0.25)
+percentile75 <- quantile(profits, 0.75)
+
+# Plot the empirical distribution with buying random machines
+hist(profits, breaks = "FD", freq = FALSE, xlab = "Profit (s30)",
+     main = "Distribution of s30 (Random Machines)", col = "skyblue", border = "black",
+     xlim = c(0, 5000000000))
+
+```
+
+We can see that the distribution is highly right-skewed.
+It indicates that there are relatively few instances where a substantial profit is achieved.
+Most of the time, the profit tends to be lower, resulting in a concentration of values towards the left side of the distribution.
+
+
+Q1.4. 
+```{r, cache=TRUE} 
+
+```
+
+Q1.5 (Bonus). 
+```{r, cache=TRUE} 
+# Set the number of simulations
+num_simulations <- 10000
+
+# Function to simulate profit under the optimal strategy
+simulate_profit_optimal <- function() {
+  m <- 1
+  s <- 0
+  
+  for (i in 1:29) {
+    r <- rpois(1, m)
+    expected_profits <- numeric(m + 1)
+    
+    for (a in 0:m) {
+      expected_profits[a + 1] <- sum(dpois(0:r, lambda = m) * pmax(s - a, 0) + pmax(s - a - (0:r) + a, 0))
+    }
+    
+    a_optimal <- which.max(expected_profits) - 1
+    s <- s + r - a_optimal
+    m <- m + a_optimal
+  }
+  
+  return(s)
+}
+
+# Simulate the profits under the optimal strategy
+profits_optimal <- replicate(num_simulations, simulate_profit_optimal())
+
+# Calculate the expected profit under the optimal strategy
+expected_profit_optimal <- mean(profits_optimal)
+
+# Print the expected profit
+cat("Expected Profit (Optimal Strategy):", expected_profit_optimal, "\n")
+```
+
+The optimal strategy is:
+
+* On each day from 1 to 29, calculate the expected profits for different values of the number of machines to buy (a).
+* Select the value of a that maximizes the expected profits.
+* Subtract the selected value of a from the profit (s) and add it to the number of machines (m).
+* Repeat this process for each day from 1 to 29.
+* On day 30, do not buy any machines and simply calculate the profit based on the remaining machines and the random number of rollups produced.
+
+
+
+## Q2. Scientists
+![Scientists](https://s3.amazonaws.com/images.powershow.com/P1254325962eFyXl.pr.jpg)
+In this question we extract and analyze text from Wikipedia describing notable female scientists from the 20th century. 
+
+1. Use the  `rvest` library to scrape all the **names** of notable female scientists of the 20th century from 
+[here](https://en.wikipedia.org/wiki/List_of_female_scientists_in_the_20th_century). For ease of extraction, you can extract only scientists with known birth and/or death year. 
+You should end up with a `names` vector of at least `500` elements, where each element is a name of a different female scientist. Print the first and last $5$ names. 
+
+
+2. Create a data-frame with one row per scientist, with separate columns indicating the name, 
+the `birth` year, the `death` year (leave as `NA` when one or both of them are not available), 
+the nationality, and the occupation (the last two usually indicated right after the year for most scientists). 
+For example, for the first scientist `Heloísa Alberto Torres` the birth year is `1895`, the death year is `1977`, 
+the nationality is `Brazilian` and the occupation is `anthropologist`. 
+Display the top-5 and bottom-5 of the resulting data-frame. <br>
+**Notes:** a. A few scientists appear more than once, in different fields. In these cases keep the scientists as separate cases. <br>
+b. The text describing some scientists may be missing and/or no in the common format shared by most scientist. 
+It is ok if your code misses/gives wrong answers to some of them and you don't need to handle every special case. 
+Make sure that your code gives the correct information for at least `400` of the scientists for each column. 
+
+
+
+3. When you click on each scientist name, you are transferred into a different url containing text about this scientist. 
+For example, clicking on the first name `Heloísa Alberto Torres`, brings you [here](https://en.wikipedia.org/wiki/Helo%C3%ADsa_Alberto_Torres).
+Parse the data and create a new column called `urls` containing the url for each scientist. 
+You may need to modify the names to get the exact urls. 
+You don't have to be perfect here, and it is enough to get the correct urls for at least $400$ out of the $>500$ scientists.   <br>
+In addition, the scientists are divided into fourteen fields the field of study (e.g. `Anthropology`, `Archaeology`, ...). 
+Add a column indicating the field of study for each scientists. 
+Extract and show the sub-table with the first scientists in each field (showing all columns for these scientistis)
+
+
+
+
+4. Next we would like to retrieve the actual texts about each scientist. 
+Write a function called `wiki_text_parser` that given a specific scientist's unparsed html page text as input, 
+outputs the parsed biographical text as a string. <br>
+The text should start at the line below the line `From Wikipedia, the free encyclopedia` in the Wikipedia page. <br>
+The text should end right before the `References` of the Wikipedia page. See for example the highlighted text below. <br>
+Run the function on the first name `Heloísa Alberto Torres` and verify that the biographical text is extracted correctly. 
+Print the resulting text and its length in characters. <br>
+**Hint:** You can look at occurrences of the scientist name
+
+
+
+
+5. Retrieve `all` the parsed scientists biographies into a vector of strings called `bios`. You can use your function from the previous questions  <br>
+Add the biography length in characters as a new column to the scientists data-frame. 
+Find the scientist with the **shortest** and with the **longest** biography for **each** of the fourteen research fields (in terms of total number of English characters), and show them in two separate tables/dataframes. <br>
+**Note:** reading all biographies may take a few minutes. <br>
+Some errors may occur, but make sure that your pages urls (part b.) match and retrieve 
+successfully at least $400$ out of the $>500$ biographies. <br>
+**Hint:** You can use the `try` command to run another command such that if the command fail the program continues and is not stopped. 
+
+
+
+6. Retrieve all words appearing in any of the biographies and compute their frequencies (treat all the texts of the biographies of the scientists as one large document and compute the frequencies in this document). <br>
+Remove all common stop words (use the command `stop_words` from the *tidytext* package). <br>
+Remove also `words` containing special characters like commas, `&`, tags (`#`) `/`, `\` etc. 
+Use the `wordcloud2` library to display in a `word-cloud` the top-100 (most-common) remaining words using the computed frequencies. 
+
+
+7. Display in a figure with fourteen separate bar-plots the distribution of biography length for each of the fourteen fields. 
+Describe the major differences between the fields. <br>
+Next, Compute for each of the fourteen fields groups the words lengths distribution. Show the distributions in a figure with fourteen separate bar-plots. Describe the major differences between the fields. 
+
+
+8. Concatenate all biographies and compute the frequency $n_i$ of each of the $26$ letters in the English alphabet in the combined text. <br>
+Consider uppercase and lowercase as the same letter. <br> 
+Plot the sorted frequencies after normalization $p_i = n_i / n$ where $n$ it the total number of letters, in a bar-plot 
+
+
+9. Compute the frequencies of consecutive **pairs** of letters for all $26^2$ ordered pairs of English letters in the same text. <br>
+That is, create a $26 \times 26$ table where for each two letters $i$ and $j$ the entry $(i,j)$ contains $n_{ij}$, the number of occurrences of the
+two letters appearing consecutively. Count only pairs of letters appearing in the same word. <br>
+For example, if the biographies text was: `Angela Merkel` then the count for `el` in your table should be 2, the count for `ng` should be 1, 
+and the count for `am` should be 0. <br>
+What is the most *common* pair of letters? what is the *least common* pair?  
+
+
+**Solutions here:** <br>
+Q2.1. 
+```{r, cache=TRUE} 
+# Specify the URL of the Wikipedia page
+url <- "https://en.wikipedia.org/wiki/List_of_female_scientists_in_the_20th_century"
+
+# Read the HTML content from the webpage
+webpage <- rvest::read_html(url)
+
+# Scrape the names, birth dates, and death dates of notable female scientists
+scientist_info <- webpage %>%
+  html_nodes(".mw-parser-output > ul > li") %>%
+  html_text()
+
+# Extract names, birth dates, and death dates
+names <- gsub("\\s*\\(.*", "", scientist_info)
+dates <- gsub(".*\\((.*?)\\).*", "\\1", scientist_info)
+
+# Extract birth dates and death dates
+birth_dates <- gsub("[^0-9-]", "", sapply(strsplit(dates, "–|-|="), "[", 1))
+death_dates <- gsub("[^0-9-]", "", sapply(strsplit(dates, "–|-|="), "[", 2))
+
+# Filter out scientists without birth or death dates
+has_dates <- birth_dates != ""
+names <- names[has_dates]
+birth_dates <- birth_dates[has_dates]
+death_dates <- death_dates[has_dates]
+no_death_dates <- death_dates == ""
+death_dates[no_death_dates] <- NA
+
+# Check if birth dates and death dates are composed of 4-digit numbers
+is_valid_date <- function(date) {
+  all(grepl("^\\d{4}$", strsplit(date, "-")[[1]]))
+}
+
+# Set birth date as NA if it is not a valid 4-digit number
+birth_dates[!sapply(birth_dates, is_valid_date)] <- NA
+
+# Set death date as NA if it is not a valid 4-digit number
+death_dates[!sapply(death_dates, is_valid_date)] <- NA
+
+# Create a data frame with names, birth dates, and death dates
+scientist <- data.frame(
+  Name = names,
+  BirthDate = birth_dates,
+  DeathDate = death_dates,
+  stringsAsFactors = FALSE
+)
+
+# Filter out scientists who do not have both birth and death dates
+scientist <- scientist[!is.na(scientist$BirthDate) | !is.na(scientist$DeathDate), ]
+
+# Print the first 5 names
+cat("First 5 Names:\n")
+print(scientist$Name[1:5])
+
+# Print the last 5 names
+cat("\nLast 5 Names:\n")
+print(tail(scientist$Name, 5))
+
+```
+We created a data frame with the names of the scientist, their birthdate an their death date if existed.
+We have a vector of the scientist names with 538 names. The first 5 are: Heloísa Alberto Torres, Katharine Bartlett, Ruth Benedict, Anna Bērzkalne and Alicia Dussán de Reichel.
+The last 5 names are : Marianne Simmel, Davida Teller, Nora Volkow, Margo Wilson and Catherine G. Wolf
+
+
+Q2.2. 
+```{r, cache=TRUE} 
+# Specify the URL of the Wikipedia page
+url <- "https://en.wikipedia.org/wiki/List_of_female_scientists_in_the_20th_century"
+
+# Read the HTML content from the webpage
+webpage <- rvest::read_html(url)
+
+# Scrape the names, birth dates, and death dates of notable female scientists
+scientist_info <- webpage %>%
+  html_nodes(".mw-parser-output > ul > li") %>%
+  html_text()
+
+# Extract names, nationalities, and occupations
+pattern <- "(.*?) \\(([^\\)]+)\\),\\s*([A-Z][a-zA-Z]*)(?:\\s([a-zA-Z]*))?"
+data <- str_match(scientist_info, pattern)
+
+# Create a data frame with names, nationalities, and occupations
+scientist_table <- data.frame(
+  Name = data[, 2],
+  Nationality = data[, 4],
+  Occupation = sapply(data[, 5], function(x) ifelse(is.na(x), NA, strsplit(x, " ")[[1]][1])),
+  stringsAsFactors = FALSE
+)
+
+# Remove rows with NA in the "Name" column
+scientist_table <- scientist_table[!is.na(scientist_table$Name), ]
+
+# Merge the scientist and scientist_table data frames based on the Name column
+merged_table <- merge(scientist, scientist_table, by = "Name", all.x = TRUE)
+
+# Keep only the first occurrence of each name in merged_table
+merged_table <- merged_table %>%
+  distinct(Name, .keep_all = TRUE)
+
+# Print the top-5 and bottom-5 rows of the resulting data frame
+print(head(merged_table, 5))
+print(tail(merged_table, 5))
+
+```
+
+We created a new data frame with the name of the scientist, their nationality and their occupation. We supposed that for every scientist, their nationality is after their birth date and death date followed by a coma, that the nationality can begin with a capital letter and the occupation just a small letter. for most of the cases it gave us the good nationality and a good part of the occupation but for some of the scientist they have more than one nationality and some scientist have more than one occupation. So for every scientist it took only the first nationality and the first occupation. We then merged the table with the birth date and death date of the scientist and the table with the nationality and the occupation if the scientist.
+
+Q2.3. 
+```{r, cache=TRUE} 
+# Specify the URL of the Wikipedia page
+url <- "https://en.wikipedia.org/wiki/List_of_female_scientists_in_the_20th_century"
+
+# Read the HTML content from the webpage
+webpage <- rvest::read_html(url)
+
+# Find the field titles and scientist names
+field_nodes <- webpage %>%
+  html_nodes("h2")  # Find the field nodes
+
+# Create empty vectors to store field names and scientist names
+fields <- character(0)
+scientists <- character(0)
+
+# Loop through each field node
+for (node in field_nodes) {
+  # Extract the field name from the node
+  field <- node %>%
+    html_text() %>%
+    gsub("\\[edit\\]", "", .) %>%
+    trimws()  # Extract and clean the field name
+    
+  # Extract the scientist names under the field
+  scientist_nodes <- node %>%
+    html_nodes(xpath = "./following-sibling::ul[1]/li")  # Find the scientist nodes
+    
+  # Extract only the names from the scientist nodes
+  scientist_names <- scientist_nodes %>%
+    html_text() %>%
+    stringr::str_extract("^[^\\(]+")  # Extract the text before the parentheses
+    
+  # Append the scientist names to the vector
+  scientists <- c(scientists, scientist_names)
+  
+  # Repeat the field name for the corresponding number of scientists
+  fields <- c(fields, rep(field, length(scientist_names)))
+}
+
+# Create a data frame with scientist names and corresponding fields
+scientist_data <- data.frame(Name = scientists, Field = fields)
+
+# Remove trailing spaces at the end of names
+scientist_data$Name <- str_trim(scientist_data$Name)
+
+# Merge the tables based on the "Name" column
+merged_table <- merge(merged_table, scientist_data, by = "Name", all.x = TRUE)
+
+# Specify the URL of the individual scientist's Wikipedia page
+base_url <- "https://en.wikipedia.org/wiki/"
+merged_table$URL <- paste0(base_url, gsub(" ", "_", merged_table$Name))
+
+# Extract the sub-table with the first scientists in each field
+sub_table <- merged_table %>%
+  distinct(Field, .keep_all = TRUE) %>%
+  filter(!is.na(Field))
+
+# Show the sub-table
+sub_table
+```
+
+For every node in the Wikipedia page, it extracted the URL link for every name by assuming that every link beginning with a base URL : "https://en.wikipedia.org/wiki/" and added the name of the scientist after it. For the most of the scientist it is accurate, but there is some that it did not match the correct URL. It may be for different reasons like for example there is multiple pages for this scientist.
+To affiliate a field for every scientist, we looped under every of the 14 fields and extracted every scientist's names that are under a node. We can see that we ended up with the correct 14 fields and gave us the first name of every of these fields by the alphabetic order.
+
+Q2.4. 
+```{r, cache=TRUE} 
+wiki_text_parser <- function(url) {
+  # Read the HTML content from the URL
+  webpage <- read_html(url)
+  
+  # Find the biographical text
+  biographical_text <- webpage %>%
+    html_nodes(xpath = "//div[@id='mw-content-text']//p") %>%
+    html_text() %>%
+    paste(collapse = " ")
+  
+  # Remove any leading or trailing whitespace
+  biographical_text <- trimws(biographical_text)
+  
+  # Return the parsed biographical text
+  return(biographical_text)
+}
+
+# Test the function on the first scientist
+scientist_url <- merged_table$URL[1]  # URL for the first scientist
+biographical_text <- wiki_text_parser(scientist_url)  # Parse the biographical text
+
+# Print the resulting text and its length
+cat("Biographical Text:\n")
+cat(wiki_text_parser(merged_table$URL[1]), "\n\n")
+cat("Text Length:", nchar(biographical_text), "characters")
+
+```
+
+Our function extracted the biography's text of the scientist. By using the XPath expression "//div[@id='mw-content-text']//p", the code selects all "p" elements (paragraphs) that are descendants of the "div" element with the "id" attribute set to "mw-content-text". This allows us to specifically target the section of the Wikipedia page that typically contains the biographical text. (The "id" attribute is used to uniquely identify an element within an HTML document). At the end it counted the numbeer of chaaracters in the text and printed it.
+
+Q2.5. 
+```{r, cache=TRUE} 
+# Function to retrieve biography for a scientist
+get_biography <- function(url) {
+  tryCatch({
+    biography <- read_html(url) %>%
+      html_nodes(".mw-parser-output > p") %>%
+      html_text() %>%
+      paste(collapse = " ")
+    return(biography)
+  }, error = function(e) {
+    return(NA)  # Return NA if there's an error in retrieving the biography
+  })
+}
+
+# Retrieve biographies for all scientists
+bios <- character(0)  # Vector to store biographies
+
+# Vector to store problematic URLs
+problematic_urls <- c("https://en.wikipedia.org/wiki/Ida_Noddack_Tacke",
+                      "https://en.wikipedia.org/wiki/Laura_Anne_Willson")
+
+# Loop through each scientist's URL and retrieve the biography
+for (url in merged_table$URL) {
+  if (url %in% problematic_urls) {
+    bios <- c(bios, NA)  # Add NA for problematic URLs
+  } else {
+    biography <- get_biography(url)
+    bios <- c(bios, biography)
+  }
+}
+
+# Add biography length as a new column to the merged_table data frame
+merged_table$BiographyLength <- nchar(bios)
+
+# Remove the problematic URLs from the merged_table
+merged_table <- merged_table[!(merged_table$URL %in% problematic_urls), ]
+
+# Find the scientist with the shortest biography for each field
+shortest_biographies <- merged_table %>%
+  group_by(Field) %>%
+  slice_min(BiographyLength, n = 1) %>%
+  ungroup()
+
+# Find the scientist with the longest biography for each field
+longest_biographies <- merged_table %>%
+  group_by(Field) %>%
+  slice_max(BiographyLength, n = 1) %>%
+  ungroup()
+
+# Arrange the shortest_biographies table in descending order of biography length
+shortest_biographies <- shortest_biographies %>%
+  arrange(desc(BiographyLength)) %>% filter(!is.na(Field))
+
+# Arrange the longest_biographies table in descending order of biography length
+longest_biographies <- longest_biographies %>%
+  arrange(desc(BiographyLength)) %>% filter(!is.na(Field)) 
+
+# Show the updated tables
+shortest_biographies
+longest_biographies
+
+```
+
+We added the biography length in characters as a new column to the merged_table data-frame. We add 2 problematic URLs that the code did not worked for them so we did not related to them (of Idda Noddak Tacke and Laura Anne Willson). It gave us 2 tables, the first one is the shortest biographies for every field and the second one is about the longest biographies for every field. For the shortest biographies, we can identify 3 scientist that for their biographies are not accurate because their lenght is very little (32, 28 and 26), the code did not token the good URL because for these URLs there is multiple pages in Wikipedia. For example for Sara Stewart there is a page for the author, basketball or the cancer researcher (the one that we are interested in).
+
+**Solutions here:** 
+Q2.6. 
+```{r, cache=TRUE} 
+# Combine all the biographies into one large document
+biographies <- paste(bios, collapse = " ")
+
+# Create a tidy text object
+biographies_tidy <- tibble(text = biographies) %>%
+  tidytext::unnest_tokens(word, text)
+
+# Remove common stop words
+biographies_cleaned <- biographies_tidy %>%
+  anti_join(stop_words, by = c("word" = "word"))
+
+# Remove words containing special characters
+biographies_cleaned <- biographies_cleaned %>%
+  filter(!grepl("[^[:alnum:]\\s]", word))
+
+# Remove numeric values
+biographies_cleaned <- biographies_cleaned %>%
+  filter(!grepl("^\\d+$", word))
+
+# Compute word frequencies
+word_frequencies <- biographies_cleaned %>%
+  count(word, sort = TRUE)
+
+# Select the top 100 most common words
+top_100_words <- head(word_frequencies, 100)
+
+# Generate the word cloud
+wordcloud2(top_100_words)
+```
+
+We merged everyone of the bios, we removed the commons words by using the library "tidytext", the special characters and the numbers. We then compute the words frequencies and decided to expose the first 100. We can see that the most used words are "university", "research" or "women" that is the main subject of this project.
+
+Q2.7. 
+```{r, cache=TRUE} 
+# Filter out NA field
+valid_fields <- merged_table[!is.na(merged_table$Field), ]
+
+# Create a bar plot for biography length distribution by field (excluding NA field)
+biography_length_plot <- ggplot(valid_fields, aes(x = Field, y = BiographyLength)) +
+  geom_bar(stat = "summary", fun = "median", fill = "steelblue") +
+  labs(x = "Field", y = "Biography Length (Median)") +
+  ggtitle("Biography Length Distribution by Field") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Display the bar plot
+biography_length_plot
+
+# Compute word lengths for each field (excluding NA field)
+word_lengths <- valid_fields %>%
+  mutate(word_length = str_length(Name))
+
+# Create a bar plot for word length distribution by field (excluding NA field)
+word_length_plot <- ggplot(word_lengths, aes(x = Field, y = word_length)) +
+  geom_bar(stat = "summary", fun = "median", fill = "steelblue") +
+  labs(x = "Field", y = "Word Length (Median)") +
+  ggtitle("Word Length Distribution by Field") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Display the bar plot
+word_length_plot
+
+```
+
+We created a bar plots graph such that for every field it gave us the median length in the biographies in that same field. we can see that for the field Astronomy, the biographies are really more longer than the other fields , approximately 6000 words and for the Meteorology field the biographies are more shorter than the rest of the other fields, approximately 1200 words. We created a second plot that analyse the median of the length of the word for each field. For all the field the words' median is approximately 16 letters except for the field Science education that is approximately 23 letters.
