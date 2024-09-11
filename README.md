@@ -32,3 +32,43 @@ In this section, data is scraped from the Wikipedia page on notable female scien
 4. **Biographical Data Analysis**: Finding the shortest and longest biographies for each field of study and displaying them in separate tables.
 5. **Word Frequency Analysis**: Retrieving the words from the biographies and displaying a word cloud of the most common words, excluding stopwords and special characters.
 6. **Length Distribution Analysis**: Displaying the distribution of biography lengths and word lengths for each field in separate bar pl
+
+
+### Required Libraries
+
+```r
+library(ggplot2)
+library(dplyr)
+library(scales)   # for formatting y-axis labels to non-scientific type
+library(tidyr)
+library(tidyverse)
+library(reshape2) # for melt
+library(ggthemes)
+library(modelr)
+library(grid)     # for geom_segment
+library(ggrepel)  # for ggrepel::geom_label_repel
+library(rvest)    # for web scraping
+library(wordcloud2)
+library(tidytext)
+options("scipen" = 100, "digits" = 4)  # avoid scientific display of digits
+```
+
+## Results
+
+1. **Profit Simulation**: We simulated multiple strategies for maximizing rollup sales profits and analyzed the empirical distributions:
+   - **All-in Investment Strategy**: Mean profit of ~29.95, median of 30, showing a roughly symmetric distribution.
+   - **No Investment Strategy**: Similar profit distribution to the all-in strategy with a mean of ~30.06.
+   - **Random Investment Strategy**: Skewed distribution, showing that random investment yields lower profits most of the time.
+   - **Optimal Strategy**: Derived the best strategy for maximizing expected profit under the given constraints.
+
+2. **Female Scientist Analysis**:
+   - Extracted over 500 female scientists' names and relevant data.
+   - Parsed over 400 biographies and measured their lengths.
+   - Displayed the most common words from the biographies in a word cloud, with "university," "research," and "women" being among the most frequent words.
+   - Created visualizations to explore differences in biography lengths and word usage across various fields.
+
+
+## Authors
+
+- **Lisa Mechaly** – https://www.linkedin.com/in/lisa-mechaly-932409261?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app
+- **Jeremy Hakoun** – https://www.linkedin.com/in/jeremyhakoune?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=ios_app
